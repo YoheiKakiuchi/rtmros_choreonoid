@@ -21,6 +21,7 @@
     <arg name="CONF_FILE" value="$(arg CONF_FILE)" />
     <arg name="SIMULATOR_NAME" value="$(arg SIMULATOR_NAME)" />
     <arg name="hrpsys_opt_rtc_config_args" default='
+-o "example.GazeController.config_file:$(arg CONF_FILE)"
 -o "example.RobotHardware_choreonoid.config_file:$(arg CONF_FILE)"'/>
 
     <arg name="KILL_SERVERS" value="$(arg KILL_SERVERS)" />

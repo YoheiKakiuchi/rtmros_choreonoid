@@ -3,29 +3,41 @@
 from hrpsys_choreonoid_tutorials.choreonoid_hrpsys_config import *
 
 class JAXON_RED_HrpsysConfigurator(ChoreonoidHrpsysConfiguratorOrg):
+    gz = None
+    gz_svc = None
+    gz_version = None
+
     def getRTCList (self):
-        ##return self.getRTCListUnstable()
-        return [
-            ['seq', "SequencePlayer"],
-            ['sh', "StateHolder"],
-            ['fk', "ForwardKinematics"],
-            ['tf', "TorqueFilter"],
-            ['kf', "KalmanFilter"],
-            ['vs', "VirtualForceSensor"],
-            ['rmfo', "RemoveForceSensorLinkOffset"],
-            ['es', "EmergencyStopper"],
-            ['ic', "ImpedanceController"],
-            ['abc', "AutoBalancer"],
-            ['st', "Stabilizer"],
-            ['co', "CollisionDetector"],
-            # ['tc', "TorqueController"],
-            # ['te', "ThermoEstimator"],
-            # ['tl', "ThermoLimiter"],
-            ['rfu', "ReferenceForceUpdater"],
-            ['hes', "EmergencyStopper"],
-            ['el', "SoftErrorLimiter"],
-            ['log', "DataLogger"]
-            ]
+        not_using_list = ['tc', 'te', 'tl'] ## TODO: should be added the reason for removing
+        using_list = [x for x in self.getRTCListUnstable() if not x[0] in not_using_list]
+
+        idx = using_list.index(['el', "SoftErrorLimiter"])
+        using_list.insert(idx  , ['gz', "GazeController"])
+        print 'Using rtc list = %s'%using_list
+
+        return using_list
+        # return [
+        #     ['seq', "SequencePlayer"],
+        #     ['sh', "StateHolder"],
+        #     ['fk', "ForwardKinematics"],
+        #     ['tf', "TorqueFilter"],
+        #     ['kf', "KalmanFilter"],
+        #     ['vs', "VirtualForceSensor"],
+        #     ['rmfo', "RemoveForceSensorLinkOffset"],
+        #     ['es', "EmergencyStopper"],
+        #     ['ic', "ImpedanceController"],
+        #     ['abc', "AutoBalancer"],
+        #     ['st', "Stabilizer"],
+        #     ['co', "CollisionDetector"],
+        #     # ['tc', "TorqueController"],
+        #     # ['te', "ThermoEstimator"],
+        #     # ['tl', "ThermoLimiter"],
+        #     ['rfu', "ReferenceForceUpdater"],
+        #     ['hes', "EmergencyStopper"],
+        #     ['el', "SoftErrorLimiter"],
+        #     #['gz', "GazeController"],
+        #     ['log', "DataLogger"]
+        #     ]
 
     def defJointGroups (self):
         rarm_group = ['rarm', ['RARM_JOINT0', 'RARM_JOINT1', 'RARM_JOINT2', 'RARM_JOINT3', 'RARM_JOINT4', 'RARM_JOINT5', 'RARM_JOINT6', 'RARM_JOINT7']]
@@ -51,6 +63,23 @@ class JAXON_RED_HrpsysConfigurator(ChoreonoidHrpsysConfiguratorOrg):
         self.ic_svc.startImpedanceController("larm")
         self.ic_svc.startImpedanceController("rarm")
         self.startStabilizer()
+
+    def getJointAngleControllerList(self):
+        '''!@brief
+        Get list of controller list that need to control joint angles
+        '''
+        lst = ChoreonoidHrpsysConfiguratorOrg.getJointAngleControllerList(self)
+        if self.gz:
+            lst.insert(-1, self.gz)
+        return lst
+
+    def connectComps(self):
+        ChoreonoidHrpsysConfiguratorOrg.connectComps(self)
+        if self.gz:
+            connectPorts(self.rh.port("q"), self.gz.port("qCurrent"))
+            #connectPorts(self.sh.port("q"), self.gz.port("rpy"))
+            connectPorts(self.abc.port("basePosOut"), self.gz.port("basePosIn"))
+            connectPorts(self.abc.port("baseRpyOut"), self.gz.port("baseRpyIn"))
 
 if __name__ == '__main__':
     hcf = JAXON_RED_HrpsysConfigurator("JAXON_RED")
