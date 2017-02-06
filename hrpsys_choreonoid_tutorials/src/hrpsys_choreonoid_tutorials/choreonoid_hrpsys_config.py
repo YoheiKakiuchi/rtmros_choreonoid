@@ -33,12 +33,17 @@ class ChoreonoidHrpsysConfiguratorOrg(URATAHrpsysConfigurator):
         ##self.connectLoggerPort(self.abc, 'rhsensor')
         ##self.connectLoggerPort(self.abc, 'lhsensor')
 
+    def connectLinkTransformLoggerPorts(self):
+        for pn in filter (lambda x : re.match("T_", x), self.rh.ports.keys()):
+            self.connectLoggerPort(self.rh, pn)
+
     def connectConstraintForceLoggerPorts(self):
         for pn in filter (lambda x : re.match("F_", x), self.rh.ports.keys()):
             self.connectLoggerPort(self.rh, pn)
 
     def init (self, robotname="Robot", url="", connect_constraint_force_logger_ports = False):
         URATAHrpsysConfigurator.init(self, robotname, url)
+        self.connectLinkTransformLoggerPorts()
         if connect_constraint_force_logger_ports:
             self.connectConstraintForceLoggerPorts()
 
