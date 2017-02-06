@@ -3,6 +3,7 @@
 
   <arg name="RUN_DRIVER" default="false" />
   <arg name="USE_RESIZE" default="true" />
+  <arg name="BIPED_LOCALIZATION" default="false" />
 
   <include file="$(find jsk_robot_startup)/launch/multisense_local.launch">
     <arg name="ip_address" value="multisense" />
@@ -12,6 +13,7 @@
     <arg name="RUN_DRIVER" value="$(arg RUN_DRIVER)" />
     <arg name="USE_RESIZE" value="$(arg USE_RESIZE)" />
     <arg name="HEIGHTMAP_FILTER_Z" value="1.5" />
+    <arg name="USE_BIPED_LOCALIZATION" value="$(arg BIPED_LOCALIZATION)" />
   </include>
   <!--node pkg="dynamic_reconfigure" type="dynparam" name="$(anon set_multisense_resolution)"
         args="set multisense resolution 1024x544x256" /-->
