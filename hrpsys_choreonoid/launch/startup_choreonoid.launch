@@ -31,6 +31,11 @@
     <arg name="hrpsys_opt_rtc_config_args" default='$(arg hrpsys_opt_rtc_config_args)
 -o "example.RobotHardware_choreonoid.config_file:$(arg CONF_FILE)"
 '/>
+    <!--arg name="hrpsys_opt_rtc_config_args" default='
+-o "example.RobotHardware_choreonoid.config_file:$(arg CONF_FILE)"
+-o "example.AccelerationFilter.config_file:$(arg CONF_FILE)"
+'/-->
+
     <arg name="KILL_SERVERS" value="$(arg KILL_SERVERS)" />
     <arg name="REALTIME" value="$(arg REALTIME)" />
     <arg name="corbaport" value="$(arg corbaport)" />

@@ -3,6 +3,10 @@
 from hrpsys_choreonoid_tutorials.choreonoid_hrpsys_config import *
 
 class JAXON_RED_HrpsysConfigurator(ChoreonoidHrpsysConfiguratorOrg):
+    acf = None
+    acf_svc = None
+    acf_version = None
+
     def getRTCList (self):
         ##return self.getRTCListUnstable()
         return [
@@ -21,11 +25,35 @@ class JAXON_RED_HrpsysConfigurator(ChoreonoidHrpsysConfiguratorOrg):
             # ['tc', "TorqueController"],
             # ['te', "ThermoEstimator"],
             # ['tl', "ThermoLimiter"],
+            ['acf', "AccelerationFilter"],
             ['rfu', "ReferenceForceUpdater"],
             ['hes', "EmergencyStopper"],
             ['el', "SoftErrorLimiter"],
             ['log', "DataLogger"]
             ]
+    def connectComps(self):
+        ChoreonoidHrpsysConfiguratorOrg.connectComps(self)
+        if self.acf:
+            #   currently use first acc and rate sensors for kf
+            s_acc = filter(lambda s: s.type == 'Acceleration', self.sensors)
+            if (len(s_acc) > 0) and self.rh.port(s_acc[0].name) != None:  # check existence of sensor ;; currently original HRP4C.xml has different naming rule of gsensor and gyrometer
+                connectPorts(self.rh.port(s_acc[0].name), self.acf.port('accIn'))
+            s_rate = filter(lambda s: s.type == 'RateGyro', self.sensors)
+            if (len(s_rate) > 0) and self.rh.port(s_rate[0].name) != None:  # check existence of sensor ;; currently original HRP4C.xml has different naming rule of gsensor and gyrometer
+                connectPorts(self.rh.port(s_rate[0].name), self.acf.port("rateIn"))
+            if self.kf:
+                connectPorts(self.kf.port("rpy"), self.acf.port("rpyIn"))
+            if self.abc:
+                connectPorts(self.abc.port("basePosOut"), self.acf.port("posIn"))
+            if self.rh:
+                connectPorts(self.rh.port("WAIST"), self.acf.port("transIn"))
+            # connectPorts(self.sh.port("qOut"), self.acf.port(""))
+    def setupLogger(self, maxlen=15000):
+        ChoreonoidHrpsysConfiguratorOrg.setupLogger(self, maxlen)
+        self.connectLoggerPort(self.rh, 'LFOOT')
+        self.connectLoggerPort(self.rh, 'RFOOT')
+        self.connectLoggerPort(self.rh, 'LENDS')
+        self.connectLoggerPort(self.rh, 'RENDS')
 
     def defJointGroups (self):
         rarm_group = ['rarm', ['RARM_JOINT0', 'RARM_JOINT1', 'RARM_JOINT2', 'RARM_JOINT3', 'RARM_JOINT4', 'RARM_JOINT5', 'RARM_JOINT6', 'RARM_JOINT7']]
