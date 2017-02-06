@@ -53,12 +53,13 @@ PDcontroller::~PDcontroller()
 RTC::ReturnCode_t PDcontroller::onInitialize()
 {
   std::cout << m_profile.instance_name << ": onInitialize() " << std::endl;
-#if 0
-  RTC::Properties& prop = getProperties();
-  coil::stringTo(dt, prop["dt"].c_str());
-#endif
   dt = 0.001; // fixed dt depend on choreonoid's rate
-  step = nstep = 2;  // fixed dt depend on choreonoid's rate
+
+  double ref_dt = 0.002;
+  RTC::Properties& prop = getProperties();
+  coil::stringTo(ref_dt, prop["ref_dt"].c_str());
+  nstep = ref_dt/dt;
+
 #if 0
   m_robot = hrp::BodyPtr(new hrp::Body());
 
@@ -173,7 +174,9 @@ RTC::ReturnCode_t PDcontroller::onExecute(RTC::UniqueId ec_id)
       dq_old = dq;
     }
 #endif
-    double tlimit;
+
+    double tlimit = 1000;
+#if 0
     if (i < 15) {
       // torso/leg
       tlimit = 1200;
@@ -184,9 +187,12 @@ RTC::ReturnCode_t PDcontroller::onExecute(RTC::UniqueId ec_id)
       // hand
       tlimit = 140;
     }
+#endif
+
     m_torque.data[i] = std::max(std::min(m_torque.data[i], tlimit), -tlimit);
 #if 0
-    if (loop % 100 == 0 && m_debugLevel == 1) {
+    //if (loop % 100 == 0 && m_debugLevel == 1) {
+    if (1) {
         std::cerr << "[" << m_profile.instance_name << "] joint = "
                   << i << ", tq = " << m_torque.data[i] << ", q,qref = (" << q << ", " << q_ref << "), dq,dqref = (" << dq << ", " << dq_ref << "), pd = (" << Pgain[i] << ", " << Dgain[i] << "), tlimit = " << tlimit << std::endl;
     }
