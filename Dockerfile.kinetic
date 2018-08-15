@@ -20,8 +20,10 @@ RUN apt-get update -q -qq && \
 WORKDIR ${WORKHOME}/catkin_ws
 RUN wstool init src && \
     wstool set -y -t src rtmros_tutorials https://github.com/start-jsk/rtmros_tutorials.git --git && \
-#    wstool set -y -t src rtmros_common https://github.com/start-jsk/rtmros_common --git && \
-#    wstool set -y -t src hrpsys https://github.com/fkanehiro/hrpsys-base.git --git && \
+### for installing hrpsys by source (require rtmros_common)
+    wstool set -y -t src rtmros_common https://github.com/start-jsk/rtmros_common --git && \
+    wstool set -y -t src hrpsys https://github.com/fkanehiro/hrpsys-base.git --git && \
+###
 #    wstool set -y -t src jsk_common https://github.com/jsk-ros-pkg/jsk_common.git --git && \
     wstool set -y -t src pr2_navigation https://github.com/PR2/pr2_navigation.git --git && \
     wstool update -t src && \
@@ -34,7 +36,7 @@ RUN wstool init src && \
 RUN mkdir -p src/rtmros_choreonoid
 COPY . src/rtmros_choreonoid/
 
-RUN rosdep install -y -r --from-paths src --ignore-src
+RUN rosdep install -y -r --from-paths src --ignore-src || echo 'Ignore rosdep error'
 
 ### should be solved ...,  hrpsys-base, jsk_common, pr2_navigation ###
 RUN apt-get install -q -qq -y ros-${ROS_DISTRO}-jsk-tilt-laser ros-${ROS_DISTRO}-jsk-recognition && \
