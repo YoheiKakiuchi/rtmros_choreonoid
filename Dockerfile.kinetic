@@ -55,8 +55,8 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     make install
 
 ## build hrpsys parallel ??
-RUN cd /home/choreonoid/catkin_ws && \
-    /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && catkin build hrpsys --no-status --no-notify"
+WORKDIR ${WORKHOME}/catkin_ws
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash && catkin build hrpsys --no-status --no-notify"
 
 ## build ros packages
 WORKDIR ${WORKHOME}/catkin_ws
