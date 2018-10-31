@@ -2,7 +2,10 @@ FROM osrf/ros:kinetic-desktop-full
 
 SHELL ["/bin/bash", "-c"]
 
-ENV CNOID_BRANCH master
+# ENV CNOID_BRANCH master
+ENV CNOID_BRANCH release-1.6
+### 1.7 if you want to use later commit, you use openrtm_1.1.2 or openrtm_1.2.0(master??)
+#ENV CNOID_BRANCH a4743cc72cf2febbec5e27d923f455d4b24fcb44
 
 ENV CNOID_INSTALL_DIR /usr/local/choreonoid
 ENV PATH ${CNOID_INSTALL_DIR}/bin:${PATH}
