@@ -1483,18 +1483,15 @@ DEF JAXON_JVRC Humanoid {
                                 } #Segment LLEG_LINK5_UPPER
                                 DEF L_CASTER Joint {
                                    translation -0.1 0.01 -0.05
-                                   jointId -1
+                                   #jointId -1
                                    jointType "rotate"
                                    jointAxis 0 1 0
-                                   # with margin
-                                   ulimit 1.0472
-                                   llimit -1.0472
                                    uvlimit 17
                                    lvlimit -17
                                    climit [50.0]
                                    rotorInertia 0.6
                                    children [
-                                      DEF L_CASTER Segment {
+                                      DEF L_WHEEL_LINK Segment {
                                          centerOfMass 0 0 0
                                          mass 2.0
                                          momentsOfInertia [0.1 0 0 0 0.1 0 0 0 0.1]
@@ -1795,18 +1792,15 @@ DEF JAXON_JVRC Humanoid {
                                 ##DEF R_CASTER Joint {
                                 DEF WHEEL Joint {
                                    translation -0.1 -0.01 -0.05
-                                   jointId -1
+                                   # jointId -1
                                    jointType "rotate"
                                    jointAxis 0 1 0
-                                   # with margin
-                                   ulimit 1.0472
-                                   llimit -1.0472
                                    uvlimit 17
                                    lvlimit -17
                                    climit [50.0]
                                    rotorInertia 0.6
                                    children [
-                                      DEF R_CASTER Segment {
+                                      DEF R_WHEEL_LINK Segment {
                                          centerOfMass 0 0 0
                                          mass 2.0
                                          momentsOfInertia [0.1 0 0 0 0.1 0 0 0 0.1]
@@ -1993,6 +1987,8 @@ DEF JAXON_JVRC Humanoid {
     USE RARM_FINGER0,
     USE RARM_FINGER1,
     USE RANGE_LINK,
+    USE R_WHEEL_LINK,
+    USE L_WHEEL_LINK,
   ]
   name "JAXON_JVRC"
   info [
