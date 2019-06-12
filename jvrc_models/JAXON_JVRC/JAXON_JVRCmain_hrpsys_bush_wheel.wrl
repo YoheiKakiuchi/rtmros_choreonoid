@@ -214,7 +214,7 @@ PROTO Surface [
 
 DEF JAXON_JVRC Humanoid {
   humanoidBody [
-    DEF BODY Joint {
+    DEF WAIST Joint {
       jointType "free"
       jointAxis 0 0 0
       translation 0 0 1.0225
@@ -235,14 +235,14 @@ DEF JAXON_JVRC Humanoid {
               visual [ Inline { url "BODY.wrl" } ] # visual
               collision [ Inline { url "collision_directory/BODY.wrl" } ] # collision
             } # surface
-            DEF ACCELERATION_SENSOR AccelerationSensor{
+            DEF gsensor AccelerationSensor{
               translation 0 0 0
-              rotation 1 0 0 0
+              rotation 0.707107 0 -0.707107 3.14159
               sensorId 0
             } #Sensor
-            DEF RATE_GYRO_SENSOR Gyro{
+            DEF gyrometer Gyro{
               translation 0 0 0
-              rotation 1 0 0 0
+              rotation 0.707107 0 -0.707107 3.14159
               sensorId 0
             } #Sensor
           ]
