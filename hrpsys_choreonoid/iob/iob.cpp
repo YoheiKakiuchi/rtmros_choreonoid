@@ -35,7 +35,7 @@ static bool isLocked = false;
 static int frame = 0;
 static timespec g_ts;
 static long g_period_ns=5000000;
-static std::vector<bool> isPosTq;
+static std::vector<joint_control_mode> controlmode;
 
 Time iob_time;
 
@@ -83,6 +83,7 @@ static InPort<TimedAcceleration3D> *ip_gsensor_sim;
 static InPort<TimedAngularVelocity3D> *ip_gyrometer_sim;
 
 static void readGainFile();
+static void loadInitialGain();
 
 static double dt;
 static std::ifstream gain;
@@ -170,11 +171,11 @@ int set_number_of_joints(int num)
     act_vel.resize(num);
     power.resize(num);
     servo.resize(num);
-    isPosTq.resize(num);
+    controlmode.resize(num);
 
     for (int i=0; i<num; i++){
         command[i] = com_torque[i] = power[i] = servo[i] = 0;
-        isPosTq[i] = false;
+        controlmode[i] = JCM_POSITION;
     }
 
     torque_counter = 0;
@@ -291,27 +292,14 @@ int read_servo_alarm(int id, int *a)
 int read_control_mode(int id, joint_control_mode *s)
 {
     CHECK_JOINT_ID(id);
-    if(isPosTq[id]){
-#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
-      *s = JCM_POSITION_TORQUE;
-#endif
-    }else{
-      *s = JCM_POSITION;
-    }
+    *s = controlmode[id];
     return TRUE;
 }
 
 int write_control_mode(int id, joint_control_mode s)
 {
     CHECK_JOINT_ID(id);
-    if(s == JCM_POSITION){
-      isPosTq[id] = false;
-    }
-#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
-    if(s == JCM_POSITION_TORQUE){
-      isPosTq[id] = true;
-    }
-#endif
+    controlmode[id] = s;
     return TRUE;
 }
 
@@ -572,7 +560,7 @@ int open_iob(void)
         com_torque[i] = 0.0;
         power[i] = OFF;
         servo[i] = OFF;
-        isPosTq[i] = false;
+        controlmode[i] = JCM_POSITION;
     }
     clock_gettime(CLOCK_MONOTONIC, &g_ts);
 
@@ -637,6 +625,7 @@ void iob_update(void)
         dof = m_angleIn.data.length();
         m_torqueOut.data.length(dof);
         readGainFile();
+        loadInitialGain();
       }
       for(int i = 0; i < m_angleIn.data.length() && i < dof; i++) {
         act_angle[i] = m_angleIn.data[i];
@@ -782,13 +771,18 @@ void iob_finish(void)
       tqold_ref[i] = tq_ref;
 
       double ctq;
-      if(isPosTq[i]){
+      switch(controlmode[i]){
+#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
+      case JCM_POSITION_TORQUE:
+#endif
+      case JCM_TORQUE:
         // position & torque control
-        //ctq = -(q - q_ref) * Pgain[i] - (dq - dq_ref) * Dgain[i] - (tq - tq_ref) * tqPgain[i] - (dtq - dtq_ref) * tqDgain[i];
-        ctq = -(q - q_ref) *   Pgain[i] / (tqPgain[i] + 1) - (dq  -  dq_ref) *   Dgain[i] / (tqPgain[i] + 1)
-                +  tq_ref  * tqPgain[i] / (tqPgain[i] + 1) - (dtq - dtq_ref) * tqDgain[i] / (tqPgain[i] + 1);
-      } else {
+        ctq = -(q - q_ref) * Pgain[i] - (dq - dq_ref) * Dgain[i] + tq_ref * tqPgain[i] - (dtq - dtq_ref) * tqDgain[i];
+        break;
+      case JCM_POSITION:
+      default:
         ctq = -(q - q_ref) * Pgain[i] - (dq - dq_ref) * Dgain[i]; // simple PD control
+        break;
       }
 
       m_torqueOut.data[i] = std::max(std::min(ctq, tlimit[i]), -tlimit[i]);
@@ -878,6 +872,65 @@ static void readGainFile()
       com_torque[i] = tqold_ref[i] = tqold[i] = 0/*act_torque[i]*/;
     }
 }
+
+static void loadInitialGain()
+{
+  std::string initialgain_fname;
+  RTC::Properties& prop = self_ptr->getProperties();
+  coil::stringTo(initialgain_fname, prop["pdgains.file_name"].c_str());
+  std::ifstream strm(initialgain_fname.c_str());
+  if (strm.is_open()) {
+    std::cerr << "[iob] Initial Gain file [" << initialgain_fname << "] opened" << std::endl;
+    int i = 0;
+    for (; i < dof; i++) {
+      double pgain=0, dgain=0, tqpgain=0, tqdgain=0, tmp;
+    retry:
+      {
+        std::string str;
+        if (std::getline(strm, str)) {
+          if (str.empty())   goto retry;
+          if (str[0] == '#') goto retry;
+
+          std::istringstream sstrm(str);
+          sstrm >> pgain;
+          if(sstrm.eof()) goto next;
+          sstrm >> tmp;
+          if(sstrm.eof()) goto next;
+          sstrm >> dgain;
+          if(sstrm.eof()) goto next;
+          sstrm >> tqpgain;
+          if(sstrm.eof()) goto next;
+          sstrm >> tmp;
+          if(sstrm.eof()) goto next;
+          sstrm >> tqdgain;
+        } else {
+          i--;
+          break;
+        }
+      }
+
+    next:
+      write_pgain(i, pgain);
+      write_dgain(i, dgain);
+#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
+      write_torque_pgain(i, tqpgain);
+      write_torque_dgain(i, tqdgain);
+#endif
+      std::cerr << "joint: " << i;
+      std::cerr << ", P: " << pgain;
+      std::cerr << ", D: " << dgain;
+      std::cerr << ", tqP: " << tqpgain;
+      std::cerr << ", tqD: " << tqdgain << std::endl;
+    }
+    strm.close();
+    if (i != dof) {
+      std::cerr << "[iob] Initial Gain file [" << initialgain_fname << "] does not contain gains for all joints" << std::endl;
+    }
+  } else {
+    std::cerr << "[iob] Initial Gain file [" << initialgain_fname << "] not opened" << std::endl;
+  }
+}
+
 
 int close_iob(void)
 {
